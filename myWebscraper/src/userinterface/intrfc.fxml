@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.canvas.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane fx:id="frm" prefHeight="478.0" prefWidth="538.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="userinterface.Controller">
+   <children>
+      <Button fx:id="btnBrowse" layoutX="437.0" layoutY="35.0" mnemonicParsing="false" onAction="#setFilePath" text="Browse..." />
+      <TextField fx:id="tbxUrl" layoutX="14.0" layoutY="35.0" prefHeight="31.0" prefWidth="392.0" />
+      <Label layoutX="14.0" layoutY="14.0" text="Enter URL:" />
+      <Label layoutX="412.0" layoutY="40.0" text="or" />
+      <TextField fx:id="tbxOutpath" layoutX="14.0" layoutY="433.0" prefHeight="31.0" prefWidth="407.0" />
+      <Label layoutX="13.0" layoutY="412.0" text="Output path:" />
+      <Button fx:id="btnChoose" layoutX="427.0" layoutY="433.0" mnemonicParsing="false" onAction="#setDirectory" prefHeight="31.0" prefWidth="100.0" text="Choose..." />
+      <Group layoutX="122.0" layoutY="221.0" />
+      <Pane layoutX="22.0" layoutY="129.0" prefHeight="200.0" prefWidth="200.0">
+         <children>
+            <Pane prefHeight="188.0" prefWidth="200.0">
+               <children>
+                  <CheckBox fx:id="chkText" layoutX="14.0" layoutY="35.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="107.0" text="Text" />
+                  <Label layoutX="14.0" layoutY="14.0" prefHeight="21.0" prefWidth="68.0" text="Collect:" />
+                  <CheckBox fx:id="chkTables" layoutX="14.0" layoutY="58.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="107.0" text="Tables" />
+                  <CheckBox fx:id="chkLinks" layoutX="14.0" layoutY="81.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="107.0" text="Links" />
+                  <CheckBox fx:id="chkVideos" layoutX="14.0" layoutY="104.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="107.0" text="Videos" />
+                  <CheckBox fx:id="chkPictures" layoutX="14.0" layoutY="127.0" mnemonicParsing="false" prefHeight="21.0" prefWidth="107.0" text="Pictures" />
+               </children>
+            </Pane>
+         </children>
+      </Pane>
+      <Button fx:id="btnRun" layoutX="341.0" layoutY="155.0" mnemonicParsing="false" onAction="#handleButtonAction" prefHeight="149.0" prefWidth="157.0" text="Button" />
+   </children>
+</AnchorPane>
