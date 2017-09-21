@@ -1,13 +1,20 @@
 package connection;
 
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.*;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -132,6 +139,48 @@ public class WebConnection {
 		out.close();
 		in.close();
 	}
+	
+	private void getLinks() throws IOException {
+		Set<String> noDuplicates = getLinksFromFile();
+		Response resp = Jsoup.connect(this.getUrlString()).followRedirects(true).execute();
+		Document doc = Jsoup.connect(resp.url().toExternalForm()).get();
+		String path = System.getProperty("user.home") + "\\Documents\\test\\";
+		//TODO: Exclude mails and duplicated entries
+		
+		Elements links = doc.select("a");
+		String absUrl = "";
+		for (Element e : links) {
+			absUrl = e.absUrl("href");
+			noDuplicates.add(absUrl);
+		}
+		
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(path + "links.txt", false));
+		noDuplicates.forEach(x -> {
+			try {
+				bw.write(x);
+				bw.newLine();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		});
+		bw.close();
+	}
+	
+	private Set<String> getLinksFromFile(){
+		Set<String> entries = new HashSet<>();
+		String path = System.getProperty("user.home") + "\\Documents\\test\\links.txt";
+		try(Scanner sc = new Scanner(new File(path))){
+			while (sc.hasNextLine()) {
+				entries.add(sc.nextLine());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
+		return entries;
+	}
 
 	public static void main(String[] args) throws IOException {
 
@@ -139,18 +188,16 @@ public class WebConnection {
 		System.out.println(wc.getUrlString());
 		// String html = wc.getHtml();
 		// System.out.println(html);
-
+		wc.getLinks();
 		
 		Response respone = Jsoup.connect(wc.getUrlString()).followRedirects(true).execute();
 		Document doc = Jsoup.connect(respone.url().toExternalForm()).get();
 
 		Elements img = doc.getElementsByTag("img");
 
-		URL nUrl = null;
 		for (Element e : img) {
 			String src = e.absUrl("src");
 			getImage(src);
-			
 		}
 		
 		
