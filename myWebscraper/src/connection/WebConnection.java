@@ -1,35 +1,34 @@
 package connection;
 
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.*;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import org.jsoup.Connection.Response;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import javax.imageio.ImageIO;
+
 public class WebConnection {
 
 	private URL url;
-	private URLConnection con;
 	private boolean hasMetaRefresh = false;
+	private Document doc;
+	private Set<URL> internalLinks = new HashSet<>();
 
 	public WebConnection(String url) {
 		// assign the passed URL-String to
@@ -54,15 +53,14 @@ public class WebConnection {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		// open the connection
+		
 		try {
-			this.con = this.url.openConnection();
-
+			Response respone = Jsoup.connect(getUrlString()).followRedirects(true).execute();
+			doc = Jsoup.connect(respone.url().toExternalForm()).get();
+			this.url = respone.url();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	public WebConnection(URL url) {
@@ -70,16 +68,11 @@ public class WebConnection {
 	}
 
 	public String getHtml() {
-		InputStream is = null;
-
-		try {
-			is = this.con.getInputStream();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return is != null ? new BufferedReader(new InputStreamReader(is)).lines().parallel()
-				.collect(Collectors.joining("\n")).replace("\n", "").replace("\t", "") : "";
+		return doc.toString();
+	}
+	
+	public String getHtmlAsPlainText() {
+		return getHtml().replaceAll("\\n\\t ", "");
 	}
 
 	public URL getUrl() {
@@ -88,6 +81,11 @@ public class WebConnection {
 
 	public String getUrlString() {
 		return this.url.toExternalForm();
+	}
+	
+	public String getBaseUrl() {
+		String urlString= getUrlString();
+		return urlString.substring(0, urlString.lastIndexOf("/"));
 	}
 
 	private String getMetaRefresh(String url) throws IOException {
@@ -116,6 +114,21 @@ public class WebConnection {
 		return this.hasMetaRefresh;
 	}
 	
+	public <T> Collection<String> getImagesSources() {
+		Set<String> imgSource = new HashSet<>();
+		Elements img = doc.getElementsByTag("img");
+		String src="";
+		for (Element e : img) {
+			src = e.absUrl("src");
+			if (src.lastIndexOf("/") == src.length()) { //remove slashes at the end of url
+				src = src.substring(1, src.lastIndexOf("/"));
+			}
+			imgSource.add(e.absUrl(src));
+		}
+		
+		return (Collection<String>)imgSource;
+	}
+	
 	private static void getImage(String src) throws IOException{
 		String folder = null;
 		int indexName=src.lastIndexOf("/");
@@ -140,12 +153,43 @@ public class WebConnection {
 		in.close();
 	}
 	
-	private void getLinks() throws IOException {
-		Set<String> noDuplicates = getLinksFromFile();
-		Response resp = Jsoup.connect(this.getUrlString()).followRedirects(true).execute();
-		Document doc = Jsoup.connect(resp.url().toExternalForm()).get();
+	public BufferedImage cImage(String src) {
+		String name = getImageName(src);
+		
+		URL url = null;
+		InputStream in = null;
+		BufferedImage img = null;
+		try {
+			url = new URL(src);
+			in = url.openStream();
+			img = ImageIO.read(in);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		return img;
+		
+	}
+	
+	private String getImageName(String src) {
+		int indexName = src.lastIndexOf("/");
+		
+		if (indexName == src.length()) {
+			src = src.substring(1, indexName);
+		}
+		
+		indexName = src.lastIndexOf("/");
+		String name = src.substring(indexName, src.length());
+		
+		return name;
+	}
+	
+	private <T> Collection<String> getLinks() throws IOException {
+		Set<String> noDuplicates = new HashSet<>();
 		String path = System.getProperty("user.home") + "\\Documents\\test\\";
-		//TODO: Exclude mails and duplicated entries
+		//TODO: Exclude mails
 		
 		Elements links = doc.select("a");
 		String absUrl = "";
@@ -154,17 +198,77 @@ public class WebConnection {
 			noDuplicates.add(absUrl);
 		}
 		
+		return (Collection<String>)noDuplicates;
 		
-		BufferedWriter bw = new BufferedWriter(new FileWriter(path + "links.txt", false));
-		noDuplicates.forEach(x -> {
-			try {
-				bw.write(x);
-				bw.newLine();
-			} catch (IOException e1) {
-				e1.printStackTrace();
+		
+//		BufferedWriter bw = new BufferedWriter(new FileWriter(path + "links.txt", false));
+//		noDuplicates.forEach(x -> {
+//			try {
+//				bw.write(x);
+//				bw.newLine();
+//			} catch (IOException e1) {
+//				e1.printStackTrace();
+//			}
+//		});
+//		bw.close();
+	}
+	
+	private <T> Collection<String> getExternalLinks(){
+		Collection<String> links = null;
+		try {
+			links = getLinks();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		Set<String> extLinks = new HashSet<>();
+		
+		links.forEach(x -> {
+			if (!x.contains(getBaseUrl()) && !x.contains("mailto")) {
+				extLinks.add(x);
 			}
 		});
-		bw.close();
+		
+		return extLinks;
+	}
+	
+	public <T> Collection<String> getInternalLinks(){
+		Collection<String> links = null;
+		try {
+			links = getLinks();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		Set<String> intLinks = new HashSet<>();
+		
+		links.forEach(x -> {
+			if (x.contains(getBaseUrl()) && !x.contains("mailto")) {
+				intLinks.add(x);
+			}
+		});
+		
+		return intLinks;
+	}
+	
+	public <T> Collection<String> getEmails() throws IOException{
+		Collection<String> m = getLinks();
+		Set<String> mails = new HashSet<>();
+		
+		
+		m.forEach(x -> {
+			String str = "";
+			if (x.contains("mailto:")) {
+				str = x.replace("mailto:", "");
+				
+				if (x.contains("?")) {
+					str = str.substring(0, str.lastIndexOf("?"));
+				}
+			}
+			mails.add(str);
+		});
+		
+		return mails;
 	}
 	
 	private Set<String> getLinksFromFile(){
@@ -188,19 +292,30 @@ public class WebConnection {
 		System.out.println(wc.getUrlString());
 		// String html = wc.getHtml();
 		// System.out.println(html);
-		wc.getLinks();
+//		wc.getLinks();
+//		
+//		Response respone = Jsoup.connect(wc.getUrlString()).followRedirects(true).execute();
+//		Document doc = Jsoup.connect(respone.url().toExternalForm()).get();
+//
+//		Elements img = doc.getElementsByTag("img");
+//
+//		for (Element e : img) {
+//			String src = e.absUrl("src");
+//			getImage(src);
+//		}
+//		
+		Collection<String> internal = wc.getInternalLinks();
+		Collection<String> external = wc.getExternalLinks();
+		Collection<String> links = wc.getLinks();
+		Collection<String> mails = wc.getEmails();
 		
-		Response respone = Jsoup.connect(wc.getUrlString()).followRedirects(true).execute();
-		Document doc = Jsoup.connect(respone.url().toExternalForm()).get();
-
-		Elements img = doc.getElementsByTag("img");
-
-		for (Element e : img) {
-			String src = e.absUrl("src");
-			getImage(src);
-		}
-		
-		
+		links.forEach(x -> System.out.println(x));
+		System.out.println("internal: \n");
+		internal.forEach(x -> System.out.println(x));
+		System.out.println("external: \n");
+		external.forEach(x -> System.out.println(x));
+		System.out.println("emails: \n");
+		mails.forEach(x->System.out.println(x));
 
 	}
 
