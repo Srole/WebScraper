@@ -21,6 +21,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import WebElements.WebTable;
+import WebElements.WebTableData;
+import WebElements.WebTableRow;
+import io.IO;
+
 import javax.imageio.ImageIO;
 
 public class WebConnection {
@@ -37,7 +42,8 @@ public class WebConnection {
 			// if the url has a meta refresh
 			// the url has to end with a slash
 			// else MalformedURLException
-			this.url = new URL(url.endsWith("/") ? url : url + "/");
+			int count = url.length() - url.replace(".", "").length();
+			this.url = count > 2 ? new URL(url) : new URL(url.endsWith("/") ? url : url + "/");
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
@@ -55,7 +61,12 @@ public class WebConnection {
 		}
 		
 		try {
-			Response respone = Jsoup.connect(getUrlString()).followRedirects(true).execute();
+			Response respone = Jsoup.connect(getUrlString())
+					.followRedirects(true)
+					.userAgent("Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:25.0) Gecko/20100101 Firefox/25.0")
+					.ignoreHttpErrors(true)
+					.referrer("http://www.google.com")
+					.execute();
 			doc = Jsoup.connect(respone.url().toExternalForm()).get();
 			this.url = respone.url();
 		} catch (IOException e) {
@@ -112,6 +123,10 @@ public class WebConnection {
 	@SuppressWarnings("unused")
 	private boolean hasMetaRefresh() {
 		return this.hasMetaRefresh;
+	}
+	
+	private Document getDocument() {
+		return this.doc;
 	}
 	
 	public <T> Collection<String> getImagesSources() {
@@ -288,7 +303,7 @@ public class WebConnection {
 
 	public static void main(String[] args) throws IOException {
 
-		WebConnection wc = new WebConnection("http://sandriesser.at");
+		WebConnection wc = new WebConnection("https://www.w3schools.com/html/html_tables.asp");
 		System.out.println(wc.getUrlString());
 		// String html = wc.getHtml();
 		// System.out.println(html);
@@ -304,18 +319,42 @@ public class WebConnection {
 //			getImage(src);
 //		}
 //		
-		Collection<String> internal = wc.getInternalLinks();
-		Collection<String> external = wc.getExternalLinks();
-		Collection<String> links = wc.getLinks();
-		Collection<String> mails = wc.getEmails();
 		
-		links.forEach(x -> System.out.println(x));
-		System.out.println("internal: \n");
-		internal.forEach(x -> System.out.println(x));
-		System.out.println("external: \n");
-		external.forEach(x -> System.out.println(x));
-		System.out.println("emails: \n");
-		mails.forEach(x->System.out.println(x));
+		
+		Elements table = wc.getDocument().select("table");
+		Elements rows = null;
+		WebTable tbl = new WebTable();
+		WebTableRow row = null;
+		
+		for (Element e : table) {
+			rows = e.select("tr");
+			row = new WebTableRow();
+			for (Element ee : rows) {
+				row.addCell(new WebTableData(ee.text()));
+			}
+			tbl.addTableRow(row);
+		}
+		
+		tbl.getText();
+		
+//		IO.writeTextFile(tbl.getText(), System.getProperty("user.home")+"\\Documents\\test\\table.txt");
+//		System.out.println(tbl.getText());
+//		String str = "String\rStr";
+//		System.out.println(str);
+//		System.out.println("String\rstring");
+		
+//		Collection<String> internal = wc.getInternalLinks();
+//		Collection<String> external = wc.getExternalLinks();
+//		Collection<String> links = wc.getLinks();
+//		Collection<String> mails = wc.getEmails();
+//		
+//		links.forEach(x -> System.out.println(x));
+//		System.out.println("internal: \n");
+//		internal.forEach(x -> System.out.println(x));
+//		System.out.println("external: \n");
+//		external.forEach(x -> System.out.println(x));
+//		System.out.println("emails: \n");
+//		mails.forEach(x->System.out.println(x));
 
 	}
 

@@ -27,9 +27,9 @@ public final class IO {
 		return entries;
 	}
 	
-	public static void writeTextFile(String path) throws IOException{
+	public static void writeTextFile(String text, String path) throws IOException{
 		BufferedWriter bw = new BufferedWriter(new FileWriter(path, false));
-		bw.write("test");
+		bw.write(text);
 		bw.close();
 	}
 	
