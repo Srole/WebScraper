@@ -26,7 +26,6 @@ public class WebTableRow {
 		for (WebTableData td : data) {
 			sb.append(td.getText() + " ");
 		}
-		//sb.append(System.lineSeparator());
 		return sb.toString();
 	}
 	

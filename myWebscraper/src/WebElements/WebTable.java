@@ -40,7 +40,6 @@ public class WebTable {
 		for (WebTableRow rw : this.rows) {
 			sb.append(rw.getText() + System.lineSeparator());
 		}
-		System.out.println(sb.toString());
 		return sb.toString();
 	}
 	
